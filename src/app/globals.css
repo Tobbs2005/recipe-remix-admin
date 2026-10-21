@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* Pastel kitchen theme. Light only: `dark:` utilities only apply under a .dark class (never set). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-display: var(--font-fredoka), ui-rounded, system-ui, sans-serif;
+
+  /* Warm cocoa neutrals (replaces cool grays everywhere). */
+  --color-zinc-50: #fffaf3;
+  --color-zinc-100: #fbf1e6;
+  --color-zinc-200: #f3e2d3;
+  --color-zinc-300: #e7cdbc;
+  --color-zinc-400: #c7a594;
+  --color-zinc-500: #9f8174;
+  --color-zinc-600: #7d6158;
+  --color-zinc-700: #634b45;
+  --color-zinc-800: #4b3834;
+  --color-zinc-900: #372926;
+  --color-zinc-950: #261c1a;
+  --color-black: #3d2b28;
+
+  /* Strawberry pink (was emerald: the primary accent across the app). */
+  --color-emerald-50: #fff1f4;
+  --color-emerald-100: #ffe1e9;
+  --color-emerald-200: #ffc9d7;
+  --color-emerald-300: #ffacc1;
+  --color-emerald-400: #fb8eab;
+  --color-emerald-500: #f2729a;
+  --color-emerald-600: #df5584;
+  --color-emerald-700: #c2416e;
+  --color-emerald-800: #9c3458;
+  --color-emerald-900: #742842;
+  --color-emerald-950: #4a1829;
+
+  /* Peach / apricot. */
+  --color-amber-50: #fff6ec;
+  --color-amber-100: #ffead4;
+  --color-amber-200: #ffd8b0;
+  --color-amber-300: #ffc28a;
+  --color-amber-400: #ffab6a;
+  --color-amber-500: #f59353;
+  --color-amber-600: #dd773a;
+  --color-amber-700: #b55c2a;
+  --color-amber-800: #8c4722;
+  --color-amber-900: #69361b;
+
+  /* Extra pastels for stickers and tags. */
+  --color-cream: #faf4e4;
+  --color-butter: #fff1b8;
+  --color-butter-deep: #f5d76e;
+  --color-mint: #cdeedd;
+  --color-mint-deep: #5fb98e;
+  --color-sky: #d6ecfb;
+  --color-sky-deep: #5aa4d6;
+  --color-lilac: #e8defc;
+  --color-lilac-deep: #9a7fd9;
+  --color-blush: #ffe1e9;
+  --color-cocoa: #3d2b28;
+
+  --shadow-soft: 0 2px 0 rgb(61 43 40 / 0.06), 0 10px 30px -12px rgb(61 43 40 / 0.18);
+  --shadow-pop: 0 4px 0 rgb(61 43 40 / 0.12);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 9s ease-in-out infinite;
+  --animate-wiggle: wiggle 2.4s ease-in-out infinite;
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-pop: pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+  --animate-steam: steam 2.6s ease-in-out infinite;
+  --animate-bubble: bubble 1.8s ease-in infinite;
+  --animate-spin-slow: spin 14s linear infinite;
+  --animate-twinkle: twinkle 2.2s ease-in-out infinite;
+  --animate-confetti: confetti 1.4s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+    50% { transform: translateY(-10px) rotate(calc(var(--r, 0deg) + 4deg)); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35) rotate(-8deg); }
+    100% { transform: scale(1); }
+  }
+  @keyframes steam {
+    0% { opacity: 0; transform: translateY(4px) scaleY(0.8); }
+    40% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(-14px) scaleY(1.1); }
+  }
+  @keyframes bubble {
+    0% { opacity: 0; transform: translateY(0) scale(0.6); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-28px) scale(1.1); }
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.35; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+  @keyframes confetti {
+    0% { opacity: 1; transform: translate(0, 0) rotate(0); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+  }
+}
+
+body {
+  background-color: var(--color-cream);
+  background-image: radial-gradient(rgb(223 85 132 / 0.08) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  color: var(--color-cocoa);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-emerald-200);
+}
+
+/* Scalloped "gingham" strip used under the header and on hero cards. */
+.gingham {
+  background-color: var(--color-blush);
+  background-image:
+    linear-gradient(90deg, rgb(255 255 255 / 0.55) 50%, transparent 50%),
+    linear-gradient(rgb(255 255 255 / 0.55) 50%, transparent 50%);
+  background-size: 16px 16px;
+}
+
+.sticker {
+  filter: drop-shadow(0 3px 0 rgb(61 43 40 / 0.12));
+}
+
+/* Tape strip on photos. */
+.tape {
+  background: rgb(255 241 184 / 0.85);
+  box-shadow: 0 1px 2px rgb(61 43 40 / 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
