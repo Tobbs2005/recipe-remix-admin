@@ -37,9 +37,10 @@ export function Stars({ value, size = "text-sm" }: { value: number; size?: strin
   );
 }
 
-export function Pill({ children, tone = "zinc" }: { children: ReactNode; tone?: "zinc" | "pink" | "mint" | "sky" | "butter" | "lilac" | "cocoa" }) {
+export function Pill({ children, tone = "zinc" }: { children: ReactNode; tone?: "zinc" | "red" | "pink" | "mint" | "sky" | "butter" | "lilac" | "cocoa" }) {
   const tones = {
     zinc: "bg-zinc-100 text-zinc-700",
+    red: "bg-red-100 text-red-800",
     pink: "bg-emerald-100 text-emerald-800",
     mint: "bg-mint text-emerald-950",
     sky: "bg-sky text-sky-900",

@@ -1,12 +1,11 @@
-import { DIETS, type Diet } from "@/lib/diets";
+// Built-in fallback chain, used only when the database has no usable prompt chain.
 // Cheap defaults: Gemini Flash for text, Gemini Flash Image for the dish photo.
 export const RECIPE_MODEL = process.env.OPENROUTER_RECIPE_MODEL || "google/gemini-2.5-flash";
-const RECIPE_FALLBACKS = ["openai/gpt-4o-mini"];
 export const IMAGE_MODEL = process.env.OPENROUTER_IMAGE_MODEL || "google/gemini-2.5-flash-image";
 
 export { DIETS, isDiet, type Diet } from "@/lib/diets";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 export const RECIPE_SYSTEM_PROMPT = `You are a home cook who turns whatever is in someone's fridge into one great recipe.
 Rules:
@@ -30,80 +29,6 @@ export type GeneratedRecipe = {
   imagePrompt: string;
 };
 
-function apiKey() {
-  const key = process.env.OPENROUTER_API_KEY;
-  if (!key) throw new Error("OPENROUTER_API_KEY is not set on the server.");
-  return key;
-}
-
-function headers() {
-  return {
-    Authorization: `Bearer ${apiKey()}`,
-    "Content-Type": "application/json",
-    "X-Title": "Recipe Remix (The Humor Project)",
-  };
-}
-
-export function buildRecipePrompt(pantry: string, diet: Diet) {
-  return `Ingredients I have: ${pantry}\nDietary preference: ${DIETS[diet]}`;
-}
-
-export async function generateRecipe(pantry: string, diet: Diet) {
-  const userPrompt = buildRecipePrompt(pantry, diet);
-  const res = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({
-      model: RECIPE_MODEL,
-      models: [RECIPE_MODEL, ...RECIPE_FALLBACKS],
-      messages: [
-        { role: "system", content: RECIPE_SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.9,
-      max_tokens: 1500,
-      reasoning: { enabled: false },
-    }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!res.ok) throw new Error(`The recipe model is unavailable right now (HTTP ${res.status}).`);
-
-  const body = await res.json();
-  const raw: string = body?.choices?.[0]?.message?.content ?? "";
-  const model: string = body?.model ?? RECIPE_MODEL;
-  const recipe = parseRecipe(raw);
-  if (!recipe) throw new Error("The model returned an unusable recipe. Try again.");
-  return { recipe, raw, model, systemPrompt: RECIPE_SYSTEM_PROMPT, userPrompt };
-}
-
-/** Returns PNG/JPEG bytes for the dish photo, or null if image generation fails. */
-export async function generateDishImage(recipe: GeneratedRecipe) {
-  const prompt = `Appetizing overhead food photo of ${recipe.title}: ${recipe.imagePrompt}. Natural light, home kitchen, on a simple plate, no text, no people.`;
-  try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
-        model: IMAGE_MODEL,
-        modalities: ["image", "text"],
-        messages: [{ role: "user", content: prompt }],
-      }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(60_000),
-    });
-    if (!res.ok) return null;
-    const body = await res.json();
-    const url: string | undefined = body?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const match = url?.match(/^data:(image\/(?:png|jpeg|webp));base64,(.+)$/);
-    if (!match) return null;
-    return { bytes: Buffer.from(match[2], "base64"), mime: match[1], model: (body?.model as string) ?? IMAGE_MODEL };
-  } catch {
-    return null;
-  }
-}
-
 function clean(v: unknown, max: number) {
   return String(v ?? "").replace(/\s+/g, " ").trim().slice(0, max);
 }
@@ -113,7 +38,7 @@ function intOrNull(v: unknown, min: number, max: number) {
   return Number.isFinite(n) && n >= min && n <= max ? n : null;
 }
 
-function parseRecipe(raw: string): GeneratedRecipe | null {
+export function parseRecipe(raw: string): GeneratedRecipe | null {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start === -1 || end === -1) return null;
@@ -144,3 +69,7 @@ function parseRecipe(raw: string): GeneratedRecipe | null {
     return null;
   }
 }
+
+export const FALLBACK_USER_TEMPLATE = "Ingredients I have: {{pantry}}\nDietary preference: {{diet}}";
+export const FALLBACK_IMAGE_TEMPLATE =
+  "Appetizing overhead food photo of {{title}}: {{image_prompt}}. Natural light, home kitchen, on a simple plate, no text, no people.";

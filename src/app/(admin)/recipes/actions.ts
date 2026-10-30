@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { generateDishImage, generateRecipe, isDiet } from "@/lib/ai/recipes";
+import { runRecipePipeline } from "@/lib/ai/pipeline";
+import { isDiet } from "@/lib/ai/recipes";
 import { requireAdmin } from "@/lib/admin/auth";
 import { RECIPE_IMAGE_BUCKET } from "@/lib/admin/data";
 
@@ -124,46 +125,13 @@ export async function generateRecipeWithAI(_prev: FormState, fd: FormData): Prom
   if (pantry.length < 2 || pantry.length > 300) return { error: "List ingredients (2 to 300 characters)." };
   if (!isDiet(diet)) return { error: "Pick a valid diet." };
 
-  let result;
-  try {
-    result = await generateRecipe(pantry, diet);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Generation failed." };
-  }
-  const r = result.recipe;
-  const { data: row, error } = await supabase
-    .from("recipes")
-    .insert({
-      user_id: user.id,
-      pantry,
-      diet,
-      title: r.title,
-      description: r.description,
-      ingredients: r.ingredients,
-      steps: r.steps,
-      minutes: r.minutes,
-      servings: r.servings,
-      model: result.model,
-      system_prompt: result.systemPrompt,
-      user_prompt: result.userPrompt,
-      raw_response: result.raw,
-    })
-    .select("id")
-    .single();
-  if (error || !row) return { error: error?.message ?? "Could not save recipe." };
-
-  const image = await generateDishImage(r);
-  if (image) {
-    const ext = image.mime === "image/jpeg" ? "jpg" : image.mime.split("/")[1];
-    const path = `${user.id}/${row.id}.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from(RECIPE_IMAGE_BUCKET)
-      .upload(path, image.bytes, { contentType: image.mime, upsert: false });
-    if (!upErr) await supabase.from("recipes").update({ image_path: path }).eq("id", row.id);
-  }
+  // Same database-driven prompt chain as the public app, logged with source = admin.
+  const result = await runRecipePipeline(supabase, user.id, pantry, diet, "admin");
+  if (!result.ok) return { error: result.error };
 
   revalidatePath("/recipes");
-  redirect(`/recipes/${row.id}?created=1`);
+  revalidatePath("/requests");
+  redirect(`/recipes/${result.recipeId}?created=1`);
 }
 
 // ---------------------------------------------------------------- UPDATE ----

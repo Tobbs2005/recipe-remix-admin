@@ -9,7 +9,22 @@ Back-of-house admin panel for [Recipe Remix](https://github.com/Tobbs2005/nextjs
 | Kitchen report (stats) | `/` | read |
 | Users / profiles | `/users`, `/users/[id]` | **READ** |
 | AI recipes + dish photos | `/recipes`, `/recipes/new`, `/recipes/[id]` | **CREATE / READ / UPDATE / DELETE** |
+| AI-generated media (dish photos) | `/media` | **READ / VIEW** (upload, replace, remove via the recipe page) |
 | Star ratings | `/ratings` | **READ** |
+| Prompt chains + their steps | `/prompt-chains`, `/prompt-chains/[id]` | **READ** |
+| Prompt chain mix (traffic weights) | `/mix` | **READ / UPDATE** |
+| Terms (kitchen glossary fed into prompts) | `/terms` | **CREATE / READ / UPDATE / DELETE** |
+| Generation examples (few-shot) | `/examples` | **CREATE / READ / UPDATE / DELETE** |
+| LLM models | `/models` | **CREATE / READ / UPDATE / DELETE** |
+| LLM providers | `/providers` | **CREATE / READ / UPDATE / DELETE** |
+| Generation requests (+ stats) | `/requests`, `/requests/[id]` | **READ** |
+| LLM responses (+ per-model latency/cost) | `/responses`, `/responses/[id]` | **READ** |
+| Allowed signup domains | `/signup-domains` | **CREATE / READ / UPDATE / DELETE** |
+| Whitelisted emails | `/whitelist` | **CREATE / READ / UPDATE / DELETE** |
+
+### Week 7: config lives in the database, every call is logged
+
+`supabase/migrations/0006_llm_observability.sql` adds providers, models, prompt chains/steps, the chain mix, terms, examples, generation requests, LLM responses and the signup allowlists. The generator (`src/lib/ai/pipeline.ts`, shared with the public app) picks a chain by weighted random from the mix, skips chains whose model or provider is switched off, fills `{{terms}}` and `{{examples}}` into the prompt, and logs one `generation_requests` row per click plus one `llm_responses` row per model call (prompts as sent, raw output, latency, tokens, cost). Signups are enforced by a `before insert` trigger on `auth.users`: allowed domain (subdomains count) or whitelisted email, open if both lists are empty.
 
 The overview highlights: a day-of-week x hour "kitchen clock" heatmap, 30-day activity, the most common fridge ingredients and how their recipes rate, the star distribution, cook time vs. rating, diet split, the toughest and sweetest critics, top chefs, hall of fame, most divisive recipes (std. dev. of stars) and most saved.
 
@@ -33,7 +48,7 @@ update public.profiles set is_superadmin = true where email = 'you@example.com';
 
 ## Setup
 
-1. Run `supabase/migrations/0005_admin_panel.sql` in the Supabase SQL editor (after the app's 0001 to 0004).
+1. Run `supabase/migrations/0005_admin_panel.sql` and `0006_llm_observability.sql` in the Supabase SQL editor (after the app's 0001 to 0004).
 2. Copy `.env.example` to `.env.local` and fill in the same Supabase URL / anon key as the app (plus `OPENROUTER_API_KEY` for AI creation).
 3. In Supabase Auth > URL Configuration, allow `http://localhost:3000/**` and your Vercel domains (`https://*-tobbs2005s-projects.vercel.app/**`).
 4. `npm install && npm run dev`.
